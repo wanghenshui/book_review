@@ -133,3 +133,150 @@
 
 ### 事务
 
+ACID
+
+
+
+### 复杂查询
+
+#### 视图
+
+- 感觉视图就是个缓存，理解成指针也行
+
+- create view veiename (vcol1....) as select ...
+  - 用到视图的查询 就是select展开的过程，两条以上select，（在视图上制造视图，不建议多重视图这种行为。影响SQL性能）
+- 限制
+  - 定义视图不能用order by因为表没有顺序
+  - 更新操作的限制
+    - select子句中未使用distinct
+    - from子句中只有一张表
+    - 未使用group by
+    - 未使用having
+
+- 删除视图 drop view
+
+#### 子查询
+
+- 感觉视图是子查询的alias，子查询更加复杂。也得as起名原则上，匿名应该也可以？
+
+- 标量子查询，where子句不能聚合，那就用个查询把聚合动作封起来。这种查询可以放在任何位置
+  - 单行，多行就退化成普通子查询
+
+#### 关联子查询
+
+- 处理多行场景 as发挥真正的用场
+
+  - 注意结合条件的作用域
+
+    ```sql
+    select product_type ,product_name, sale_price 
+    
+    from product as p1
+    
+    where sale_price > (select avg(sale_price)
+    
+    				    from product as p2
+    
+    				    where p1.product_type = p2.product_type
+    
+    				    group by product_type) ;
+    ```
+
+
+### 函数，谓词，case表达式
+
+#### 函数
+
+- 算数函数 abs mod% round
+
+  - select m,n round(m,n) as resl from table
+
+- 字符串函数
+
+  - 拼接 || select s1,s2,s1||s2 as s12_cat from table; 
+    - 不全支持，mysql concat / SQL server +
+
+  - length 不全支持，SQL server 用len
+
+  - lower upper
+
+  - replace (dst,substr, new_substr )语义比较奇怪,目标字符串的一部分换成新的
+
+  - substring(dst from begin for skip)  目标字符串的自定义开头到一段长度
+
+    - 仅PG MySQL支持
+
+      - SQL Server简化，去掉了from for，换成逗号
+
+      - Orcale/DB2进一步简化，改成substr
+
+- 日期函数 差异更大，大家实现的各不相同
+  - select current_date current_time current_timestamp
+  - extract ( 日期元素 from 日期)
+    -  select current_timestamp,extract(year from current_timestamp) as year,......
+- 转换函数
+  - select cast('0001' as integer) as int_col
+  - coalesce 吞掉null select coalesce(null,null,'?') as col1
+- 聚合函数
+
+#### 谓词
+
+- like % _ 简单的模式匹配
+- between 简写and条件
+- is null is not null
+- in or的简便写法 not in 
+  - 选不出null
+  - 子查询
+- exists 语法费解，可以使用（not） in代替
+
+```
+     select product_name, sale_price 
+
+     from product as P
+
+     where exists (select *//select 1 也行
+
+                             from shopproduct as SP
+
+                             where SP.shop_id = '000c'
+
+                             and SP.product_id = P.product_id)
+```
+
+
+
+#### case
+
+```
+case when expr then expr
+
+    when expr then expr
+
+         ...
+
+    else expr
+
+end
+```
+
+```
+SELECT product_name,
+       CASE WHEN product_type = ' 衣服 '
+            THEN 'A:' | | product_type
+            WHEN product_type = ' 办公用品 '
+            THEN 'B:' | | product_type
+            WHEN product_type = ' 厨房用具 '
+            THEN 'C:' | | product_type
+            ELSE NULL
+       END AS abc_product_type
+FROM Product;
+```
+
+oracle decode
+
+mysql if
+
+### 集合运算
+
+
+
